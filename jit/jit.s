@@ -5,7 +5,6 @@
     buffer: .skip 30000
     code_buf: .skip 65536
     jit_base: .skip 8
-    jit_ptr: .skip 8
 
 .section .text
 _start: 
@@ -52,18 +51,18 @@ _start:
     jl .exit_error
 
     mov [jit_base], rax
-    mov [jit_ptr], rax
-
     # code pointer
     lea rsi, [code_buf]
     # value pointer
     lea rdi, [buffer]
+    # jit pointer
+    mov r12, rax
 
 .interpreter_loop:
     mov al, [rsi]
     # exit if reached null terminator
     cmp al, 0
-    je .exit
+    je .run_and_exit
 
     cmp al, '+'
     je .increment
@@ -80,13 +79,16 @@ _start:
     cmp al, '.'
     je .print_value
 
-    cmp al, ','
-    je .read_input
-
     inc rsi
     jmp .interpreter_loop
 
-.exit:
+.run_and_exit:
+    # ret
+    mov byte ptr [r12], 0xc3
+
+    mov rax, [jit_base]
+    call rax
+
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -98,56 +100,43 @@ _start:
 
 .increment:
     inc rsi
-    inc byte ptr [rdi]
+    mov word ptr [r12], 0x07fe
+    add r12, 2
     jmp .interpreter_loop
 
 .decrement:
     inc rsi
-    dec byte ptr [rdi]
+    mov word ptr [r12], 0x0ffe
+    add r12, 2
     jmp .interpreter_loop
 
 .inc_pointer:
     inc rsi
-    inc rdi
+    mov dword ptr [r12], 0x00c7ff48
+    add r12, 3
     jmp .interpreter_loop
 
 .dec_pointer:
     inc rsi
-    dec rdi 
+    mov dword ptr [r12], 0x00cfff48
+    add r12, 3
     jmp .interpreter_loop
 
 .print_value: 
-    push rsi
-    push rdi
-    push rcx
-
-    mov rax, 1
-    lea rsi, [rdi]
-    mov rdi, 1
-    mov rdx, 1
-    syscall
-
-    pop rcx
-    pop rdi
-    pop rsi
+    # 56 57 51 48 c7 c0 01 00
+    movabs rax, 0x0001c0c748515756
+    mov qword ptr [r12], rax
+    # 00 00 48 8d 37 48 c7 c7
+    movabs rax, 0xc7c748378d480000
+    mov qword ptr[r12 + 8], rax
+    # 01 00 00 00 48 c7 c2 01
+    movabs rax, 0x01c2c74800000001
+    mov qword ptr[r12 + 16], rax
+    # 00 00 00 0f 05 59 5f 5e
+    movabs rax, 0x5e5f59050f000000
+    mov qword ptr [r12 + 24], rax
     
-    inc rsi
-    jmp .interpreter_loop
-
-.read_input:
-    push rsi
-    push rdi
-    push rcx
-
-    mov rsi, rdi
-    mov rax, 0
-    mov rdi, 0
-    mov rdx, 1
-    syscall
-
-    pop rcx
-    pop rdi
-    pop rsi
-
+    add r12, 32
+    
     inc rsi
     jmp .interpreter_loop
