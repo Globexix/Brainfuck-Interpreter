@@ -41,3 +41,6 @@ syscall
 pop rcx
 pop rdi
 pop rsi
+
+add byte ptr [rdi], 0
+sub byte ptr [rdi], 0

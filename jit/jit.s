@@ -108,15 +108,53 @@ _start:
     syscall
 
 .increment:
+    xor rcx, rcx
+
+.inc_loop:
+    cmp byte ptr [rsi], '+'
+    jne .inc_done
+    inc rcx
     inc rsi
+    jmp .inc_loop
+
+.inc_done:
+    cmp rcx, 1
+    jg .inc_multi
+
     mov word ptr [r12], 0x07fe
     add r12, 2
     jmp .interpreter_loop
 
+.inc_multi:
+    # 80 07 (cl)
+    mov word ptr [r12], 0x0780
+    mov byte ptr[r12 + 2], cl
+
+    add r12, 3  
+    jmp .interpreter_loop
+
 .decrement:
+    xor rcx, rcx
+.dec_loop:
+    cmp byte ptr [rsi], '-'
+    jne .dec_done
+    inc rcx
     inc rsi
-    mov word ptr [r12], 0x0ffe
+    jmp .dec_loop
+
+.dec_done:
+    cmp rcx, 1
+    jg .dec_multi
+
+    mov word ptr[r12], 0x0ffe
     add r12, 2
+    jmp .interpreter_loop
+
+.dec_multi:
+    # 80 2f (cl)
+    mov word ptr [r12], 0x2f80
+    mov byte ptr [r12 + 2], cl
+    add r12, 3
     jmp .interpreter_loop
 
 .inc_pointer:
