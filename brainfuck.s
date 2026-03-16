@@ -39,17 +39,16 @@ _start:
     cmp al, '.'
     je .print_value
 
+    cmp al, '['
+    je .jump_forward
+
+    cmp al, ']'
+    je .jump_back
+
     inc rsi
     jmp .interpreter_loop
 
 .exit:
-    # print buffer to debug with strace ./brainfuck 
-    mov rax, 1          
-    mov rdi, 1         
-    lea rsi, [buffer]
-    mov rdx, 30000      
-    syscall
-
     mov rax, 60
     xor rdi, rdi
     syscall
@@ -82,6 +81,7 @@ _start:
 .print: 
     push rsi
     push rdi
+    push rcx
 
     mov rax, 1
     lea rsi, [rdi]
@@ -89,6 +89,68 @@ _start:
     mov rdx, 1
     syscall
 
-    pop rsi
+    pop rcx
     pop rdi
+    pop rsi
     ret
+
+.jump_forward:
+    cmp byte ptr [rdi], 0
+    jne .skip_forward
+    
+    mov rcx, 1
+.jump_forward_loop:
+    inc rsi
+
+    mov al, [rsi]
+    cmp al, '['
+    je .jump_forward_inc_depth
+
+    cmp al, ']'
+    je .jump_forward_dec_depth
+    jmp .jump_forward_loop
+
+.jump_forward_inc_depth:
+    inc rcx
+    jmp .jump_forward_loop
+
+.jump_forward_dec_depth:
+    dec rcx
+    jnz .jump_forward_loop
+    inc rsi
+    jmp .interpreter_loop
+
+.skip_forward:
+    inc rsi
+    jmp .interpreter_loop
+
+.jump_back:
+    cmp byte ptr [rdi], 0
+    je .skip_back 
+
+    mov rcx, 1
+
+.jump_back_loop:
+    dec rsi
+
+    mov al, [rsi]
+    cmp al, ']'
+    je .jump_back_inc_depth
+
+    cmp al, '['
+    je .jump_back_dec_depth
+    jmp .jump_back_loop
+
+.jump_back_inc_depth:
+    inc rcx
+    jmp .jump_back_loop
+
+.jump_back_dec_depth:
+    dec rcx
+    jnz .jump_back_loop
+    inc rsi
+    jmp .interpreter_loop
+
+.skip_back:
+    inc rsi
+    jmp .interpreter_loop
