@@ -158,15 +158,54 @@ _start:
     jmp .interpreter_loop
 
 .inc_pointer:
+    xor rcx, rcx
+
+.inc_pointer_loop:
+    cmp byte ptr [rsi], '>'
+    jne .inc_pointer_done
+    inc rcx
     inc rsi
+    jmp .inc_pointer_loop
+
+.inc_pointer_done:
+    cmp rcx, 1
+    jg .inc_pointer_multi
+
     mov dword ptr [r12], 0x00c7ff48
     add r12, 3
     jmp .interpreter_loop
 
+.inc_pointer_multi:
+    # 48 83 c7 (cl)
+    mov dword ptr [r12], 0xc78348
+    mov byte ptr [r12 + 3], cl
+    add r12, 4
+    jmp .interpreter_loop
+
+
 .dec_pointer:
+    xor rcx, rcx
+
+.dec_pointer_loop:
+    cmp byte ptr [rsi], '<'
+    jne .dec_pointer_done
+    inc rcx
     inc rsi
+    jmp .dec_pointer_loop
+
+.dec_pointer_done:
+    cmp rcx, 1
+    jg .dec_pointer_multi
+
     mov dword ptr [r12], 0x00cfff48
     add r12, 3
+    jmp .interpreter_loop
+
+.dec_pointer_multi:
+    # 48 83 ef (cl)
+    mov dword ptr [r12], 0xef8348
+    mov byte ptr [r12 + 3], cl
+    add r12, 4
     jmp .interpreter_loop
 
 .print_value: 
