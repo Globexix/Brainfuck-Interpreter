@@ -36,6 +36,9 @@ _start:
     cmp al, '<'
     je .dec_pointer
 
+    cmp al, '.'
+    je .print_value
+
     inc rsi
     jmp .interpreter_loop
 
@@ -70,3 +73,22 @@ _start:
     inc rsi
     dec rdi 
     jmp .interpreter_loop
+
+.print_value:
+    call .print
+    inc rsi
+    jmp .interpreter_loop
+
+.print: 
+    push rsi
+    push rdi
+
+    mov rax, 1
+    lea rsi, [rdi]
+    mov rdi, 1
+    mov rdx, 1
+    syscall
+
+    pop rsi
+    pop rdi
+    ret
