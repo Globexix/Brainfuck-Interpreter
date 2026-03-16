@@ -39,6 +39,9 @@ _start:
     cmp al, '.'
     je .print_value
 
+    cmp al, ','
+    je .read_input
+
     cmp al, '['
     je .jump_forward
 
@@ -73,12 +76,7 @@ _start:
     dec rdi 
     jmp .interpreter_loop
 
-.print_value:
-    call .print
-    inc rsi
-    jmp .interpreter_loop
-
-.print: 
+.print_value: 
     push rsi
     push rdi
     push rcx
@@ -92,7 +90,28 @@ _start:
     pop rcx
     pop rdi
     pop rsi
-    ret
+    
+    inc rsi
+    jmp .interpreter_loop
+
+.read_input:
+    push rsi
+    push rdi
+    push rcx
+
+    mov rsi, rdi
+    mov rax, 0
+    mov rdi, 0
+    mov rdx, 1
+    syscall
+
+    pop rcx
+    pop rdi
+    pop rsi
+
+    inc rsi
+    jmp .interpreter_loop
+
 
 .jump_forward:
     cmp byte ptr [rdi], 0
