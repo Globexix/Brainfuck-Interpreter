@@ -79,6 +79,9 @@ _start:
     cmp al, '.'
     je .print_value
 
+    cmp al, ','
+    je .read_value
+
     cmp al, '['
     je .jump_forward
 
@@ -138,6 +141,25 @@ _start:
     # 01 00 00 00 48 c7 c2 01
     movabs rax, 0x01c2c74800000001
     mov qword ptr[r12 + 16], rax
+    # 00 00 00 0f 05 59 5f 5e
+    movabs rax, 0x5e5f59050f000000
+    mov qword ptr [r12 + 24], rax
+    
+    add r12, 32
+    
+    inc rsi
+    jmp .interpreter_loop
+
+.read_value:
+    # 56 57 51 48 89 fe 48 c7
+    movabs rax, 0xc748fe8948515756
+    mov qword ptr [r12], rax
+    # c0 00 00 00 00 48 c7 c7
+    movabs rax, 0xc7c74800000000c0
+    mov qword ptr [r12 + 8], rax
+    # 00 00 00 00 48 c7 c2 01
+    movabs rax, 0x01c2c74800000000
+    mov qword ptr [r12 + 16], rax
     # 00 00 00 0f 05 59 5f 5e
     movabs rax, 0x5e5f59050f000000
     mov qword ptr [r12 + 24], rax

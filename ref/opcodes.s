@@ -26,3 +26,18 @@ ret
 cmp byte ptr [rdi], 0
 jz 0
 jnz 0
+
+# read
+push rsi
+push rdi
+push rcx
+
+mov rsi, rdi
+mov rax, 0
+mov rdi, 0
+mov rdx, 1
+syscall
+
+pop rcx
+pop rdi
+pop rsi
