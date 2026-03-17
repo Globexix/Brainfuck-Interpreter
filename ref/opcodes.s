@@ -46,3 +46,8 @@ add byte ptr [rdi], 0
 sub byte ptr [rdi], 0
 add rdi, 0
 sub rdi, 0
+
+# exit
+mov rax, 60
+xor rdi, rdi
+syscall
