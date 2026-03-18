@@ -1,142 +1,11 @@
 .intel_syntax noprefix
-.global _start
+.global bf_aot
 
-.section .rodata
-filename: .asciz "a.out"
-
-elf_header:
-    # magic number
-    .byte 0x7f, 0x45, 0x4c, 0x46
-    # 64 bit
-    .byte 0x02
-    # little endian
-    .byte 0x01
-    # elf version
-    .byte 0x01
-    # system V ABI
-    .byte 0x00
-    # padding
-    .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    # executable file
-    .word 0x0002
-    # x86-64
-    .word 0x003e
-    # elf version
-    .int 0x00000001
-    # entry point
-    .quad 0x0000000000400078
-    # program header offset (right after elf header)
-    .quad 0x0000000000000040
-    # section header offset (none)
-    .quad 0x0000000000000000
-    # flags
-    .int 0x00000000
-    # elf header size
-    .word 0x0040
-    # program header entry size
-    .word 0x0038
-    # program header count
-    .word 0x0001
-    # section header entry size
-    .word 0x0040
-    # section header count
-    .word 0x0000
-    # section name string table index
-    .word 0x0000
-
-.section .data
-program_header:
-    # PT_LOAD
-    .int 0x00000001
-    # flags: read + write + execute
-    .int 0x00000007
-    # offset in file
-    .quad 0x0000000000000000
-    # virtual address
-    .quad 0x0000000000400000
-    # physical address
-    .quad 0x0000000000400000
-    # size in file (patched at runtime)
-    .quad 0x0000000000000000
-    # size in memory (patched at runtime)
-    .quad 0x0000000000000000
-    # alignment
-    .quad 0x0000000000200000
-
-
-.section .bss
-    buffer: .skip 30000
-    code_buf: .skip 65536
-    bin_buf: .skip 8
+.extern elf_header
+.extern program_header
 
 .section .text
-_start: 
-    # check argc >= 2
-    mov rax, [rsp]
-    cmp rax, 2
-    jl .exit_error
-
-    # check if argv[2] exists
-    cmp rax, 3
-    jl .use_default
-
-    mov r13, [rsp + 24]
-    jmp .open_file
-
-.use_default:
-    lea r13, [filename]
-
-.open_file:
-    # sys open
-    mov rdi, [rsp + 16]
-    mov rax, 2
-    xor rsi, rsi
-    xor rdx, rdx
-    syscall
-
-    cmp rax, 0
-    jl .exit_error
-    # save fd
-    mov r8, rax
-
-    # sys read
-    mov rdi, r8 # fd
-    mov rax, 0
-    lea rsi, [code_buf]
-    mov rdx, 65536
-    syscall
-
-    # sys close
-    mov rdi, r8 # fd
-    mov rax, 3
-    syscall
-
-    # allocate RWX memory
-    mov rax, 9
-    mov rdi, 0
-    mov rsi, 65536
-    mov rdx, 7
-    mov r10, 0x22
-    mov r8, -1
-    mov r9, 0
-    syscall
-
-    cmp rax, 0
-    jl .exit_error
-
-    mov [bin_buf], rax
-    # code ptr
-    lea rsi, [code_buf]
-    # emit ptr
-    mov r12, rax
-
-    # emit preamble
-    # 48 8d 3d 00 00 00 00
-    mov dword ptr [r12], 0x003d8d48
-    mov dword ptr [r12 + 3], 0x00000000
-    add r12, 7
-
-
+bf_aot: 
 
 .interpreter_loop:
     mov al, [rsi]
@@ -183,7 +52,7 @@ _start:
     add r12, 12
 
     # calc size
-    mov rax, [bin_buf]
+    mov rax, [r15]
     sub r12, rax
 
     # patch preamble
@@ -223,7 +92,7 @@ _start:
     # write code
     mov rax, 1
     mov rdi, r14
-    mov rsi, [bin_buf]
+    mov rsi, [r15]
     sub r12, 120
     mov rdx, r12
     syscall
@@ -233,14 +102,8 @@ _start:
     mov rdi, r14
     syscall
 
-    mov rax, 60
-    xor rdi, rdi
-    syscall
-
-.exit_error:
-    mov rax, 60
-    mov rdi, 1
-    syscall
+    xor rax, rax
+    ret
 
 .increment:
     xor rcx, rcx
