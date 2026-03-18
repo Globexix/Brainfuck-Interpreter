@@ -1,46 +1,8 @@
 .intel_syntax noprefix
-.global _start
-
-.section .bss
-    buffer: .skip 30000
-    code_buf: .skip 65536
+.global bf_interpreter
 
 .section .text
-_start: 
-    # check argc >= 2
-    mov rax, [rsp]
-    cmp rax, 2
-    jl .exit_error
-
-    # sys open
-    mov rdi, [rsp + 16]
-    mov rax, 2
-    xor rsi, rsi
-    xor rdx, rdx
-    syscall
-
-    cmp rax, 0
-    jl .exit_error
-    # save fd
-    mov r8, rax
-
-    # sys read
-    mov rdi, r8 # fd
-    mov rax, 0
-    lea rsi, [code_buf]
-    mov rdx, 65536
-    syscall
-
-    # sys close
-    mov rdi, r8 # fd
-    mov rax, 3
-    syscall
-
-
-    # code pointer
-    lea rsi, [code_buf]
-    # value pointer
-    lea rdi, [buffer]
+bf_interpreter:
 
 .interpreter_loop:
     mov al, [rsi]
@@ -76,14 +38,12 @@ _start:
     jmp .interpreter_loop
 
 .exit:
-    mov rax, 60
-    xor rdi, rdi
-    syscall
+    xor rax, rax
+    ret
 
 .exit_error:
-    mov rax, 60
-    mov rdi, 1
-    syscall
+    mov rax, 1
+    ret
 
 .increment:
     inc rsi
